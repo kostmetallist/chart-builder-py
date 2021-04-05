@@ -1,5 +1,7 @@
 import logging
 
+from sympy import lambdify
+from sympy.abc import x, y
 from sympy.parsing.sympy_parser import parse_expr
 # from tqdm import tqdm
 
@@ -10,6 +12,31 @@ MODES = {
     1: 'ARBITRARY_MAPPING',
     2: 'CR_SET_LOCALIZING',
 }
+
+
+def parse_two_argument_function(expression: str):
+
+    expr = parse_expr(expression)
+    if any([atom.is_Symbol and atom != x and atom != y
+            for atom in expr.atoms()]):
+
+        print('Specified expression contains symbols other than x or y: '
+              f'{expr}, please enter function depending only on x and y')
+        return None
+
+    return lambdify([x, y], expr, 'numpy')
+
+
+
+def input_function_repeatedly(prompt: str):
+
+    parsed_function = None
+    while not parsed_function:
+        entered_expression = input(prompt)
+        parsed_function = parse_two_argument_function(entered_expression)
+
+    return parsed_function
+
 
 
 if __name__ == '__main__':
@@ -33,9 +60,9 @@ if __name__ == '__main__':
     logging.info(f'Running {MODES[chosen_mode]}...')
 
     if chosen_mode == 1:
-        f_expr = parse_expr(input('Input f(x, y): '))
-        g_expr = parse_expr(input('Input g(x, y): '))
-        logging.info(f'Evaluating {f_expr}, {g_expr}')
+        f_lambda = input_function_repeatedly('Input f(x, y): ')
+        g_lambda = input_function_repeatedly('Input g(x, y): ')
+        logging.info(f'Evaluating {f_lambda}, {g_lambda}')
 
     elif chosen_mode == 2:
         pass
