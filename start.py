@@ -3,7 +3,8 @@ import logging
 from sympy import lambdify
 from sympy.abc import x, y
 from sympy.parsing.sympy_parser import parse_expr
-# from tqdm import tqdm
+
+from calculation.arbitrary_mapping import populate_2d_points
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -46,7 +47,7 @@ if __name__ == '__main__':
         try:
             chosen_mode = int(input('\n'.join([
                 'Select a mode to operate on:',
-                "\n".join(["  {}: {}".format(x, MODES[x]) for x in MODES]),
+                '\n'.join([f'  {x}: {MODES[x]}' for x in MODES]),
                 '>>> '])))
 
             if chosen_mode not in MODES:
@@ -62,7 +63,11 @@ if __name__ == '__main__':
     if chosen_mode == 1:
         f_lambda = input_function_repeatedly('Input f(x, y): ')
         g_lambda = input_function_repeatedly('Input g(x, y): ')
-        logging.info(f'Evaluating {f_lambda}, {g_lambda}')
+        x, y = [float(item.strip()) for item
+                in input('Input start point [(float, float)]: ').split(',')]
+        iterations = int(input('Input iterations number [int]: '))
+
+        xs, ys = populate_2d_points(f_lambda, g_lambda, (x, y), iterations)
 
     elif chosen_mode == 2:
         pass
