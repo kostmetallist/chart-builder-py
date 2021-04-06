@@ -23,7 +23,7 @@ def _validate_args(x_mapping, y_mapping, start_point, iterations):
             or len(start_point) != 2 \
             or any([not isinstance(elem, float) for elem in start_point]):
         logging.error(f'Incorrect `start_point` format: {start_point}; '
-                      'must be a tuple of two floats')
+                      'must be an iterable of two floats')
         raise ValueError
 
     if iterations < 1:

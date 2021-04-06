@@ -1,43 +1,10 @@
 import logging
 
-from sympy import lambdify
-from sympy.abc import x, y
-from sympy.parsing.sympy_parser import parse_expr
-
 from calculation.arbitrary_mapping import populate_2d_points
+from settings.managing import SETTINGS_BY_MODES, ArbitraryMappingSettingsManager
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-MODES = {
-    1: 'ARBITRARY_MAPPING',
-    2: 'CR_SET_LOCALIZING',
-}
-
-
-def parse_two_argument_function(expression: str):
-
-    expr = parse_expr(expression)
-    if any([atom.is_Symbol and atom != x and atom != y
-            for atom in expr.atoms()]):
-
-        print('Specified expression contains symbols other than x or y: '
-              f'{expr}, please enter function depending only on x and y')
-        return None
-
-    return lambdify([x, y], expr, 'numpy')
-
-
-
-def input_function_repeatedly(prompt: str):
-
-    parsed_function = None
-    while not parsed_function:
-        entered_expression = input(prompt)
-        parsed_function = parse_two_argument_function(entered_expression)
-
-    return parsed_function
-
 
 
 if __name__ == '__main__':
@@ -47,10 +14,11 @@ if __name__ == '__main__':
         try:
             chosen_mode = int(input('\n'.join([
                 'Select a mode to operate on:',
-                '\n'.join([f'  {x}: {MODES[x]}' for x in MODES]),
+                '\n'.join([f'  {SETTINGS_BY_MODES[mode]["@ID"]}: {mode}'
+                           for mode in SETTINGS_BY_MODES]),
                 '>>> '])))
 
-            if chosen_mode not in MODES:
+            if chosen_mode not in [1, 2]:
                 print('Invalid mode number, please try again')
                 chosen_mode = None
 
@@ -58,16 +26,17 @@ if __name__ == '__main__':
             print('Not an integer has been specified, please try again')
             chosen_mode = None
 
-    logging.info(f'Running {MODES[chosen_mode]}...')
+    # logging.info(f'Running {SETTINGS_BY_MODES[chosen_mode]}...')
 
     if chosen_mode == 1:
-        f_lambda = input_function_repeatedly('Input f(x, y): ')
-        g_lambda = input_function_repeatedly('Input g(x, y): ')
-        x, y = [float(item.strip()) for item
-                in input('Input start point [(float, float)]: ').split(',')]
-        iterations = int(input('Input iterations number [int]: '))
-
-        xs, ys = populate_2d_points(f_lambda, g_lambda, (x, y), iterations)
+        settings_manager = ArbitraryMappingSettingsManager()
+        settings_manager.prompt_user_for_settings()
+        settings = settings_manager.retrieve_mode_settings()
+        xs, ys = populate_2d_points(
+            settings['x_mapping'],
+            settings['y_mapping'],
+            settings['start_point'],
+            settings['iterations'])
 
     elif chosen_mode == 2:
         pass
