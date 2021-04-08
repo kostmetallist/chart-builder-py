@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-from sympy import lambdify
+from sympy import lambdastr
 from sympy.abc import x, y
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -29,14 +29,17 @@ SETTINGS_BY_MODES = {
 class SettingsManager(abc.ABC):
 
     MODE = None
+    RECENT_SESSION_ENCODING = 'utf-8'
     RECENT_SESSION_PATH = os.path.join('settings', '.recent_session')
 
     def __init__(self):
         self.settings = self._extract_cached_settings()
+        self.export_overrides = dict()
 
     @staticmethod
     def _get_settings_from_recent_session():
-        with open(SettingsManager.RECENT_SESSION_PATH, encoding='utf-8') as f:
+        with open(SettingsManager.RECENT_SESSION_PATH,
+                  encoding=SettingsManager.RECENT_SESSION_ENCODING) as f:
             return json.load(f)
 
     def _extract_cached_settings(self):
@@ -54,7 +57,7 @@ class SettingsManager(abc.ABC):
                   f'{expr}, please enter function depending only on x and y')
             return None
 
-        return lambdify([x, y], expr, 'numpy')
+        return lambdastr([x, y], expr)
 
     @staticmethod
     def _parse_comma_delimited_floats(elements_number: int):
@@ -95,8 +98,19 @@ class SettingsManager(abc.ABC):
         return parsed_input
 
     @abc.abstractmethod
-    def prompt_user_for_settings(self):
+    def _prompt_user_for_settings(self):
         raise NotImplementedError
+
+    def prompt_for_settings_and_save(self):
+
+        self._prompt_user_for_settings()
+        export_prepared_settings = {
+            ((x: self.settings[x]) if x not in self.export_overrides
+             else x: self.export_overrides[x]) for x in self.settings}
+
+        with open(self.RECENT_SESSION_PATH, 'w',
+                  encoding=self.RECENT_SESSION_ENCODING) as f:
+            json.dump(export_prepared_settings, f)
 
     def retrieve_mode_settings(self):
         return self.settings[self.MODE]
@@ -106,19 +120,21 @@ class ArbitraryMappingSettingsManager(SettingsManager):
 
     MODE = 'ARBITRARY_MAPPING'
 
-    def prompt_user_for_settings(self):
+    def _prompt_user_for_settings(self):
 
         relevant_prefs = self.settings[self.MODE]
 
-        x_mapping = self._input_with_default(relevant_prefs['x_mapping'],
+        x_mapping_str = self._input_with_default(relevant_prefs['x_mapping'],
             'f(x, y) [{}]: ', self._parse_two_argument_function,
             apply_callback_for_default=True)
-        relevant_prefs['x_mapping'] = x_mapping
+        self.export_overrides['x_mapping'] = x_mapping_str
+        relevant_prefs['x_mapping'] = eval(x_mapping_str)
 
         y_mapping = self._input_with_default(relevant_prefs['y_mapping'],
             'g(x, y) [{}]: ', self._parse_two_argument_function,
             apply_callback_for_default=True)
-        relevant_prefs['y_mapping'] = y_mapping
+        self.export_overrides['y_mapping'] = y_mapping_str
+        relevant_prefs['y_mapping'] = eval(y_mapping)
 
         start_point = self._input_with_default(relevant_prefs['start_point'],
             'Start point [{}]: ', self._parse_comma_delimited_floats(2))
