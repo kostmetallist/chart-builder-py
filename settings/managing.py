@@ -22,8 +22,9 @@ SETTINGS_BY_MODES = {
     },
 }
 
-
-# TODO function with inverted SETTINGS_BY_MODES?
+MODE_ID_TO_NAME = {
+    SETTINGS_BY_MODES[mode]['@ID']: mode for mode in SETTINGS_BY_MODES
+}
 
 
 class SettingsManager(abc.ABC):
@@ -34,7 +35,6 @@ class SettingsManager(abc.ABC):
 
     def __init__(self):
         self.settings = self._extract_cached_settings()
-        self.export_overrides = dict()
 
     @staticmethod
     def _get_settings_from_recent_session():
@@ -59,6 +59,7 @@ class SettingsManager(abc.ABC):
 
         return lambdify([x, y], expr, 'numpy')
 
+    # FIXME doesn't allow to enter anything
     @staticmethod
     def _parse_comma_delimited_floats(elements_number: int):
         def _parse_fixed_length_comma_delimited_floats(expression: str):
@@ -102,26 +103,28 @@ class SettingsManager(abc.ABC):
         return entered_expression, parsed_expression
 
     @abc.abstractmethod
-    def _prompt_user_for_settings(self):
+    def _prompt_user_for_mode_settings(self):
         raise NotImplementedError
 
     def prompt_for_settings_and_save(self):
 
-        print('Enter the parameters here, leave empty for defaults:')
-        self._prompt_user_for_settings()
-        export_prepared_settings = dict()
+        print('Enter the parameters here, press <ENTER> to apply defaults:')
+        export_overrides = self._prompt_user_for_mode_settings(
+            self.settings[self.MODE])
 
-        for mode in self.settings:
-            if mode not in self.export_overrides:
-                export_prepared_settings[mode] = {**self.settings[mode]}
-            else:
-                export_prepared_settings[mode] = dict()
+        export_prepared_settings = {
+            mode: {
+                setting: value for setting, value in self.settings[mode].items()
+            } for mode in self.settings if mode != self.MODE
+        }
 
-                for name in self.settings[mode]:
-                    export_prepared_settings[mode][name] = \
-                        self.export_overrides[mode][name] \
-                        if name in self.export_overrides[mode] \
-                        else self.settings[mode][name]
+        # Processing overrides if any
+        current_prefs = self.settings[self.MODE]
+        export_prepared_settings[self.MODE] = {
+            setting: (export_overrides[setting] if setting in export_overrides
+                      else current_prefs[setting])
+            for setting in current_prefs
+        }
 
         with open(self.RECENT_SESSION_PATH, 'w',
                   encoding=self.RECENT_SESSION_ENCODING) as f:
@@ -136,30 +139,30 @@ class ArbitraryMappingSettingsManager(SettingsManager):
 
     MODE = 'ARBITRARY_MAPPING'
 
-    def _prompt_user_for_settings(self):
+    def _prompt_user_for_mode_settings(self, settings):
 
-        relevant_prefs = self.settings[self.MODE]
-        self.export_overrides[self.MODE] = dict()
-        overrides = self.export_overrides[self.MODE]
+        export_overrides = dict()
 
         entered, x_mapping = self._input_with_default(
-            relevant_prefs['x_mapping'], 'f(x, y) [{}]: ',
+            settings['x_mapping'], 'f(x, y) [{}]: ',
             self._parse_two_argument_function, apply_callback_for_default=True)
-        overrides['x_mapping'] = entered
-        relevant_prefs['x_mapping'] = x_mapping
+        export_overrides['x_mapping'] = entered
+        settings['x_mapping'] = x_mapping
 
         entered, y_mapping = self._input_with_default(
-            relevant_prefs['y_mapping'], 'g(x, y) [{}]: ',
+            settings['y_mapping'], 'g(x, y) [{}]: ',
             self._parse_two_argument_function, apply_callback_for_default=True)
-        overrides['y_mapping'] = entered
-        relevant_prefs['y_mapping'] = y_mapping
+        export_overrides['y_mapping'] = entered
+        settings['y_mapping'] = y_mapping
 
         _, start_point = self._input_with_default(
-            relevant_prefs['start_point'], 'Start point [{}]: ',
+            settings['start_point'], 'Start point [{}]: ',
             self._parse_comma_delimited_floats(2))
-        relevant_prefs['start_point'] = start_point
+        settings['start_point'] = start_point
 
         _, iterations = self._input_with_default(
-            relevant_prefs['iterations'], 'Iterations number [{}]: ',
+            settings['iterations'], 'Iterations number [{}]: ',
             self._parse_integer)
-        relevant_prefs['iterations'] = iterations
+        settings['iterations'] = iterations
+
+        return export_overrides

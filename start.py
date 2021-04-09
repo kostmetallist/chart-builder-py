@@ -1,7 +1,8 @@
 import logging
 
 from calculation.arbitrary_mapping import populate_2d_points
-from settings.managing import SETTINGS_BY_MODES, ArbitraryMappingSettingsManager
+from settings.managing import MODE_ID_TO_NAME, SETTINGS_BY_MODES, \
+    ArbitraryMappingSettingsManager
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -14,11 +15,11 @@ if __name__ == '__main__':
         try:
             chosen_mode = int(input('\n'.join([
                 'Select a mode to operate on:',
-                '\n'.join([f'  {SETTINGS_BY_MODES[mode]["@ID"]}: {mode}'
-                           for mode in SETTINGS_BY_MODES]),
+                '\n'.join([f'  {id}: {name}'
+                           for id, name in MODE_ID_TO_NAME.items()]),
                 '>>> '])))
 
-            if chosen_mode not in [1, 2]:
+            if chosen_mode not in MODE_ID_TO_NAME.keys():
                 print('Invalid mode number, please try again')
                 chosen_mode = None
 
@@ -26,9 +27,9 @@ if __name__ == '__main__':
             print('Not an integer has been specified, please try again')
             chosen_mode = None
 
-    # logging.info(f'Running {SETTINGS_BY_MODES[chosen_mode]}...')
+    logging.info(f'Running in {MODE_ID_TO_NAME[chosen_mode]} mode...')
 
-    if chosen_mode == 1:
+    if MODE_ID_TO_NAME[chosen_mode] == 'ARBITRARY_MAPPING':
         settings_manager = ArbitraryMappingSettingsManager()
         settings_manager.prompt_for_settings_and_save()
         settings = settings_manager.retrieve_mode_settings()
@@ -37,9 +38,10 @@ if __name__ == '__main__':
             settings['x_mapping'],
             settings['y_mapping'],
             settings['start_point'],
-            settings['iterations'])
+            settings['iterations']
+        )
 
-    elif chosen_mode == 2:
+    elif MODE_ID_TO_NAME[chosen_mode] == 'CR_SET_LOCALIZING':
         pass
 
     logging.info('Shutting down...')
