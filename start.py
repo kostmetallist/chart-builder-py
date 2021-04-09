@@ -32,6 +32,7 @@ if __name__ == '__main__':
         settings_manager = ArbitraryMappingSettingsManager()
         settings_manager.prompt_for_settings_and_save()
         settings = settings_manager.retrieve_mode_settings()
+
         xs, ys = populate_2d_points(
             settings['x_mapping'],
             settings['y_mapping'],

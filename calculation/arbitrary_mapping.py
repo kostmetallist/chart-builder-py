@@ -19,7 +19,7 @@ def _validate_args(x_mapping, y_mapping, start_point, iterations):
                       'expected lambda function')
         raise ValueError
 
-    if not isinstance(start_point, tuple) \
+    if not hasattr(start_point, '__iter__') \
             or len(start_point) != 2 \
             or any([not isinstance(elem, float) for elem in start_point]):
         logging.error(f'Incorrect `start_point` format: {start_point}; '
