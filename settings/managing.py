@@ -64,10 +64,11 @@ class SettingsManager(abc.ABC):
     def _parse_comma_delimited_floats(elements_number: int):
         def _parse_fixed_length_comma_delimited_floats(expression: str):
 
-            float_re = r'[+-]?(\d*\.\d+|\d+)'
-            if re.fullmatch(
-                    rf'{float_re}(\s*,\s*{float_re}){{elements_number - 1}}',
-                    expression):
+            float_regex = r'[+-]?(\d*\.\d+|\d+)'
+            final_regex = rf'{float_regex}(\s*,\s*{float_regex})' \
+                          + f'{{{elements_number - 1}}}'
+
+            if re.fullmatch(final_regex, expression):
                 return [float(x) for x in expression.split(',')]
             else:
                 return None
