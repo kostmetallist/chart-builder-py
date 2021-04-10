@@ -3,6 +3,7 @@ import logging
 from calculation.arbitrary_mapping import populate_2d_points
 from settings.managing import MODE_ID_TO_NAME, SETTINGS_BY_MODES, \
     ArbitraryMappingSettingsManager
+from visualization.plotter import compose_scatter_plot
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -30,6 +31,7 @@ if __name__ == '__main__':
     logging.info(f'Running in {MODE_ID_TO_NAME[chosen_mode]} mode...')
 
     if MODE_ID_TO_NAME[chosen_mode] == 'ARBITRARY_MAPPING':
+
         settings_manager = ArbitraryMappingSettingsManager()
         settings_manager.prompt_for_settings_and_save()
         settings = settings_manager.retrieve_mode_settings()
@@ -40,6 +42,9 @@ if __name__ == '__main__':
             settings['start_point'],
             settings['iterations']
         )
+
+        compose_scatter_plot(xs, ys).show()
+
 
     elif MODE_ID_TO_NAME[chosen_mode] == 'CR_SET_LOCALIZING':
         pass
