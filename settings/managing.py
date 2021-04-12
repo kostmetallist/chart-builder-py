@@ -19,6 +19,12 @@ SETTINGS_BY_MODES = {
     },
     'CR_SET_LOCALIZING': {
         '@ID': 2,
+        'x_mapping': '1 - 1.4 * x**2 + .3 * y',
+        'y_mapping': 'x',
+        'sw_point': (-10.0, -10.0),
+        'ne_point': (10.0, 10.0),
+        'cell_density': 1_000,
+        'depth': 5,
     },
 }
 
@@ -165,5 +171,48 @@ class ArbitraryMappingSettingsManager(SettingsManager):
             settings['iterations'], 'Iterations number [{}]: ',
             self._parse_integer)
         settings['iterations'] = iterations
+
+        return export_overrides
+
+
+class CrSetLocalizingSettingsManager(SettingsManager):
+
+    MODE = 'CR_SET_LOCALIZING'
+
+    def _prompt_user_for_mode_settings(self, settings):
+
+        export_overrides = dict()
+
+        entered, x_mapping = self._input_with_default(
+            settings['x_mapping'], 'f(x, y) [{}]: ',
+            self._parse_two_argument_function, apply_callback_for_default=True)
+        export_overrides['x_mapping'] = entered
+        settings['x_mapping'] = x_mapping
+
+        entered, y_mapping = self._input_with_default(
+            settings['y_mapping'], 'g(x, y) [{}]: ',
+            self._parse_two_argument_function, apply_callback_for_default=True)
+        export_overrides['y_mapping'] = entered
+        settings['y_mapping'] = y_mapping
+
+        _, sw_point = self._input_with_default(
+            settings['sw_point'], 'South-West point [{}]: ',
+            self._parse_comma_delimited_floats(2))
+        settings['sw_point'] = sw_point
+
+        _, ne_point = self._input_with_default(
+            settings['ne_point'], 'North-East point [{}]: ',
+            self._parse_comma_delimited_floats(2))
+        settings['ne_point'] = ne_point
+
+        _, cell_density = self._input_with_default(
+            settings['cell_density'], 'Density (data points per cell) [{}]: ',
+            self._parse_integer)
+        settings['cell_density'] = cell_density
+
+        _, depth = self._input_with_default(
+            settings['depth'], 'Fragmentation depth (localizing steps) [{}]: ',
+            self._parse_integer)
+        settings['depth'] = depth
 
         return export_overrides

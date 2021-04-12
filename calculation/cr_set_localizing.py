@@ -46,7 +46,8 @@ def condense_connected_components(x_mapping, y_mapping, area=(0, 0, 1, 1),
         logging.error('Aborting connected components localization...')
         return None
 
-    xs_array = np.empty(iterations + 1, dtype=np.float32)
-    ys_array = np.empty(iterations + 1, dtype=np.float32)
+    # Dummy implementation
+    xs_array = np.empty(cell_density, dtype=np.float32)
+    ys_array = np.empty(cell_density, dtype=np.float32)
 
     return xs_array, ys_array

@@ -1,12 +1,19 @@
 import logging
 
 from calculation.arbitrary_mapping import populate_2d_points
+from calculation.cr_set_localizing import condense_connected_components
 from settings.managing import MODE_ID_TO_NAME, SETTINGS_BY_MODES, \
-    ArbitraryMappingSettingsManager
+    ArbitraryMappingSettingsManager, CrSetLocalizingSettingsManager
 from visualization.plotter import compose_scatter_plot
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
+def retrieve_mode_settings(manager):
+
+    manager.prompt_for_settings_and_save()
+    return manager.retrieve_mode_settings()
 
 
 if __name__ == '__main__':
@@ -32,10 +39,7 @@ if __name__ == '__main__':
 
     if MODE_ID_TO_NAME[chosen_mode] == 'ARBITRARY_MAPPING':
 
-        settings_manager = ArbitraryMappingSettingsManager()
-        settings_manager.prompt_for_settings_and_save()
-        settings = settings_manager.retrieve_mode_settings()
-
+        settings = retrieve_mode_settings(ArbitraryMappingSettingsManager())
         xs, ys = populate_2d_points(
             settings['x_mapping'],
             settings['y_mapping'],
@@ -47,6 +51,16 @@ if __name__ == '__main__':
 
 
     elif MODE_ID_TO_NAME[chosen_mode] == 'CR_SET_LOCALIZING':
-        pass
+
+        settings = retrieve_mode_settings(CrSetLocalizingSettingsManager())
+        xs, ys = condense_connected_components(
+            settings['x_mapping'],
+            settings['y_mapping'],
+            (*settings['sw_point'], *settings['ne_point']),
+            settings['cell_density'],
+            settings['depth']
+        )
+
+        compose_scatter_plot(xs, ys).show()
 
     logging.info('Shutting down...')
