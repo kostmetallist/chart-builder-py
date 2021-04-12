@@ -12,10 +12,10 @@ from sympy.utilities.iterables import iterable
 SETTINGS_BY_MODES = {
     'ARBITRARY_MAPPING': {
         '@ID': 1,
-        'x_mapping': 'x + y',
-        'y_mapping': 'y - x',
-        'start_point': (1.0, -1.5),
-        'iterations': 100,
+        'x_mapping': '1 - 1.4 * x**2 + .3 * y',
+        'y_mapping': 'x',
+        'start_point': (1.1, 0.5),
+        'iterations': 200_000,
     },
     'CR_SET_LOCALIZING': {
         '@ID': 2,
