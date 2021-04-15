@@ -1,9 +1,25 @@
+from collections import deque
+
 import networkx as nx
 
 from calculation.model.utils import list_to_dotted_string
 
 
-class ComponentGraph(nx.Graph):
+class ComponentGraph(nx.DiGraph):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.grey_nodes = deque()
+        self.blacklisted = []
+
+    def _perform_dfs(self, start_node):
+
+        self.grey_nodes.append(start_node)
+        for neighbour in self.adj[start_node]:
+            if neighbour not in self.blacklisted:
+                self._perform_dfs(neighbour)
+
+        self.blacklisted.append(self.grey_nodes.pop())
 
     def add_complex_node(self, id_):
         self.add_node(list_to_dotted_string(id_))
@@ -14,16 +30,19 @@ class ComponentGraph(nx.Graph):
             list_to_dotted_string(id_2),
         )
 
-    def fill_pulsar_weights(self):
-        pulse = 0
-        for node_from, node_to, data in self.edges(data=True):
-            data['weight'] = pulse
-            pulse = (pulse + 1) % 2
+    def get_clusters(self):
+        return nx.strongly_connected_components(self)
 
-    # TODO actual implementation
-    def get_scc_number(self):
-        return 42
+    def get_clusters_number(self):
+        return nx.number_strongly_connected_components(self)
 
-    # TODO actual implementation
-    def get_concentrated_nodes(self):
-        return self.nodes
+    def generate_condensed_graph(self):
+        return ComponentGraph(nx.condensation(self))
+
+    def sort_nodes(self):
+
+        for node in [edge[0] for edge in self.edges]:
+            if node not in self.blacklisted:
+                self._perform_dfs(node)
+
+        return self.blacklisted

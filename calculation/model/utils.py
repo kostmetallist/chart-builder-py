@@ -3,4 +3,4 @@ def dotted_string_to_list(data):
 
 
 def list_to_dotted_string(data):
-    return '.'.join(data)
+    return '.'.join([str(x) for x in data])

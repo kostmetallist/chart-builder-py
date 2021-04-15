@@ -16,12 +16,12 @@ class CellStatus(Enum):
 
 class ZoomableArea:
 
-    def __init__(self, area, cells_by_x, cells_by_y, id_):
+    def __init__(self, area_bounds, cells_by_x, cells_by_y, id_):
 
-        self.sw_x = area[0]
-        self.sw_y = area[1]
-        self.ne_x = area[2]
-        self.ne_y = area[3]
+        self.sw_x = area_bounds[0]
+        self.sw_y = area_bounds[1]
+        self.ne_x = area_bounds[2]
+        self.ne_y = area_bounds[3]
         self.cells_by_x = cells_by_x
         self.cells_by_y = cells_by_y
         self.id_ = id_
@@ -52,13 +52,13 @@ class ZoomableArea:
             for i in range(self.cells_by_x):
 
                 child_area = (
-                    self.sw_x + i*self.cell_width,
+                    self.sw_x + i * self.cell_width,
                     self.sw_y + (self.cells_by_y-j-1) * self.cell_height,
-                    self.sw_x + (i+1)*self.cell_width,
+                    self.sw_x + (i+1) * self.cell_width,
                     self.sw_y + (self.cells_by_y-j) * self.cell_height,
                 )
 
-                child = ZoomableArea(area, 1, 1,
+                child = ZoomableArea(child_area, 1, 1,
                                      self.id_ + [j*self.cells_by_x + i])
                 self.children.append(child)
 
@@ -67,7 +67,7 @@ class ZoomableArea:
 
         if self.cells_by_x == 1 and self.cells_by_y == 1:
 
-            if cells_by_x != 1 or cells_by_y != 1:
+            if cells_by_x == 1 and cells_by_y == 1:
                 logging.warning('Incorrect values set for either cells_by_x '
                                 f'({cells_by_x}) or cells_by_y ({cells_by_y})')
                 return
@@ -77,7 +77,7 @@ class ZoomableArea:
             self.cell_width = (self.ne_x - self.sw_x) / self.cells_by_x
             self.cell_height  = (self.ne_y - self.sw_y) / self.cells_by_y
 
-            self._initializeChildren()
+            self._initialize_children()
     
     # TODO numba @jit
     def _get_cell_number(self, x, y):
@@ -130,7 +130,7 @@ class ZoomableArea:
 
         parent = self
 
-        for i in range(id_.size()):
+        for i in range(len(id_)):
             if not parent.children:
                 if (i < len(id_) - 1):
                     logging.warning('get_cell_by_id reached end of '
@@ -138,6 +138,8 @@ class ZoomableArea:
                 return parent
 
             parent = parent.children[id_[i]]
+
+        return parent
 
     
     # TODO numba @jit
@@ -151,7 +153,7 @@ class ZoomableArea:
             return self
 
         child = self.children[self._get_cell_number(x, y)]
-        return child.get_cell_by_dot(x, y)
+        return child.get_cell_by_point(x, y)
 
     def do_initial_fragmentation(self, component_graph):
 
@@ -199,8 +201,8 @@ class ZoomableArea:
 
             for point in cell_points:
 
-                new_x = x_mapping(x, y)
-                new_y = y_mapping(x, y)
+                new_x = x_mapping(point[0], point[1])
+                new_y = y_mapping(point[0], point[1])
 
                 # In this case we do not registrating such link in graph
                 if not self._check_point_bounds(new_x, new_y):
@@ -225,14 +227,12 @@ class ZoomableArea:
 
     def markup_entire_area(self, component_graph):
 
-        print(f'Number of SCC: {component_graph.get_scc_number()}')
-        i = 0
+        print(f'Number of SCC: {component_graph.get_clusters_number()}')
 
-        for cluster in component_graph.get_concentrated_nodes():
+        for i, cluster in enumerate(component_graph.get_clusters()):
             for node in cluster:
                 id_ = dotted_string_to_list(node)
-                if i > component_graph.get_scc_number() - 1: 
+                if i > component_graph.get_clusters_number() - 1: 
                     self.get_cell_by_id(id_).status = CellStatus.DISCARDED
                 else:
                     self.get_cell_by_id(id_).cluster = i
-            i += 1
