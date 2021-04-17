@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
+from calculation.monitoring import capture_execution_time
 from calculation.model.component_graph import ComponentGraph
 from calculation.model.zoomable_area import ZoomableArea
 
@@ -40,6 +41,7 @@ def _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth):
         raise ValueError
 
 
+@capture_execution_time
 def condense_connected_components(x_mapping, y_mapping,
                                   area_bounds=(0, 0, 1, 1), cell_density=100,
                                   depth=5):
@@ -59,6 +61,8 @@ def condense_connected_components(x_mapping, y_mapping,
     cg_init.run_tarjan()
     area.markup_entire_area(cg_init)
 
+    components_order = []
+
     for i in tqdm(range(depth)):
 
         cg = ComponentGraph()
@@ -72,13 +76,13 @@ def condense_connected_components(x_mapping, y_mapping,
 
             condensed_cg = cg.generate_condensed_graph()
             sorted_reversed = condensed_cg.sort_nodes()
-            order_list = []
 
             for node in sorted_reversed:
                 if condensed_cg.nodes[node]['id'] < cg.get_clusters_number():
-                    order_list.insert(0, node)
+                    components_order.insert(0, node)
 
-            print('Order of SCC:', *order_list, sep='\n')
+
+    print('Order of SCC:', *components_order, sep='\n')
 
     pre_result = area.get_active_clustered_area(cell_density)[0]
     xs = np.empty(len(pre_result), dtype=np.float32)

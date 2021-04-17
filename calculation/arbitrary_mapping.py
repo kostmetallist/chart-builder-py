@@ -3,6 +3,8 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
+from calculation.monitoring import capture_execution_time
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -32,6 +34,7 @@ def _validate_args(x_mapping, y_mapping, start_point, iterations):
         raise ValueError
 
 
+@capture_execution_time
 def populate_2d_points(x_mapping, y_mapping, start_point=(.0, .0),
                        iterations=100):
 

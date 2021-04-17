@@ -221,7 +221,7 @@ class ZoomableArea:
 
     def markup_entire_area(self, component_graph):
 
-        print(f'Number of SCC: {component_graph.get_clusters_number()}')
+        logging.debug(f'Number of SCC: {component_graph.get_clusters_number()}')
 
         for i, cluster in enumerate(component_graph.get_clusters()):
             for node in cluster:
