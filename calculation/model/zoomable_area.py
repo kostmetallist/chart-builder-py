@@ -219,12 +219,6 @@ class ZoomableArea:
                     remote_cell.id_
                 )
 
-    def mark_as_discarded(self, nodes):
-
-        for node in nodes:
-            self.get_cell_by_id(
-                dotted_string_to_list(node)).status = CellStatus.DISCARDED
-
     def markup_entire_area(self, component_graph):
 
         print(f'Number of SCC: {component_graph.get_clusters_number()}')
@@ -232,7 +226,7 @@ class ZoomableArea:
         for i, cluster in enumerate(component_graph.get_clusters()):
             for node in cluster:
                 id_ = dotted_string_to_list(node)
-                if i > component_graph.get_clusters_number() - 1: 
+                if i > component_graph.get_clusters_number() - 1:
                     self.get_cell_by_id(id_).status = CellStatus.DISCARDED
                 else:
                     self.get_cell_by_id(id_).cluster = i

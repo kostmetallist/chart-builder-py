@@ -56,15 +56,17 @@ def condense_connected_components(x_mapping, y_mapping,
 
     area.do_initial_fragmentation(cg_init)
     area.fill_symbolic_image(cg_init, x_mapping, y_mapping)
+    cg_init.run_tarjan()
     area.markup_entire_area(cg_init)
 
     for i in tqdm(range(depth)):
 
         cg = ComponentGraph()
 
-        area.do_regular_fragmentation(cg);
-        area.fill_symbolic_image(cg, x_mapping, y_mapping);
-        area.markup_entire_area(cg);
+        area.do_regular_fragmentation(cg)
+        area.fill_symbolic_image(cg, x_mapping, y_mapping)
+        cg.run_tarjan()
+        area.markup_entire_area(cg)
 
         if i == depth - 1:
 
@@ -73,7 +75,7 @@ def condense_connected_components(x_mapping, y_mapping,
             order_list = []
 
             for node in sorted_reversed:
-                if node < cg.get_clusters_number():
+                if condensed_cg.nodes[node]['id'] < cg.get_clusters_number():
                     order_list.insert(0, node)
 
             print('Order of SCC:', *order_list, sep='\n')
