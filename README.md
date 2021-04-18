@@ -3,6 +3,10 @@
 Python implementation of
 [chart-builder](https://github.com/kostmetallist/chart-builder) project.
 
+<p align="center">
+  <img width="70%" src="img/henon.gif" />
+</p>
+
 Original application was written on Java 10, while this one targets at
 imitating the same functionality using Python infrastructure.
 
@@ -39,6 +43,10 @@ python -m flameprof ./monitoring/<timestamp>.dmp > output.svg
 ```
 
 An output SVG will contain a flame graph of executed program.
+
+<p align="center">
+  <img width="60%" src="img/flamegraph.png" />
+</p>
 
 ## Troubleshooting
 
