@@ -3,8 +3,6 @@ from enum import Enum, auto
 from math import floor
 from random import random
 
-from calculation.model.utils import dotted_string_to_list
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -59,7 +57,7 @@ class ZoomableArea:
                 )
 
                 child = ZoomableArea(child_area, 1, 1,
-                                     self.id_ + [j*self.cells_by_x + i])
+                                     self.id_ + (j*self.cells_by_x + i, ))
                 self.children.append(child)
 
     # TODO numba @jit
@@ -193,8 +191,7 @@ class ZoomableArea:
         nodes_collection = component_graph.nodes
         for node in nodes_collection:
 
-            cell_id = dotted_string_to_list(node)
-            zoomable_area = self.get_cell_by_id(cell_id)
+            zoomable_area = self.get_cell_by_id(node)
             cell_points = []
 
             zoomable_area._get_random_points(100, cell_points)
@@ -215,7 +212,7 @@ class ZoomableArea:
                     break
 
                 component_graph.add_edge_for_complex_nodes(
-                    cell_id,
+                    node,
                     remote_cell.id_
                 )
 
@@ -229,13 +226,12 @@ class ZoomableArea:
 
         for i, component in enumerate(ordered_components):
             for node in component:
-                id_ = dotted_string_to_list(node)
 
                 if len(component) > 1:
-                    self.get_cell_by_id(id_).cluster = i
+                    self.get_cell_by_id(node).cluster = i
                     clusters_num += 1
                 else:
-                    self.get_cell_by_id(id_).status = CellStatus.DISCARDED
+                    self.get_cell_by_id(node).status = CellStatus.DISCARDED
 
         logging.debug(f'{clusters_num}/{len(ordered_components)} '
                       'components are clusters')

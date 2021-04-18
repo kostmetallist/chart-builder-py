@@ -55,7 +55,7 @@ def condense_connected_components(x_mapping, y_mapping,
 
     cg_init = ComponentGraph()
     # TODO move cells_by_x, cells_by_y to settings
-    area = ZoomableArea(area_bounds, 40, 40, [])
+    area = ZoomableArea(area_bounds, 40, 40, tuple())
 
     area.do_initial_fragmentation(cg_init)
     area.fill_symbolic_image(cg_init, x_mapping, y_mapping)

@@ -4,7 +4,7 @@ Python implementation of
 [chart-builder](https://github.com/kostmetallist/chart-builder) project.
 
 <p align="center">
-  <img width="70%" src="img/henon.gif" />
+  <img width="85%" src="img/henon.gif" />
 </p>
 
 Original application was written on Java 10, while this one targets at
@@ -39,13 +39,13 @@ Custom `dump_profile` decorator is used to denote functions of interest and
 to dump the profile. For visualizing performance statistics, run the following:
 
 ```
-python -m flameprof ./monitoring/<timestamp>.dmp > output.svg
+python -m flameprof ./monitoring/<timestamp>.dmp > ./monitoring/output.svg
 ```
 
-An output SVG will contain a flame graph of executed program.
+An output SVG contains a flame graph of executed program.
 
 <p align="center">
-  <img width="60%" src="img/flamegraph.png" />
+  <img width="75%" src="img/flamegraph.png" />
 </p>
 
 ## Troubleshooting

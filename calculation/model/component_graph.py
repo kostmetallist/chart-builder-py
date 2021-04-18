@@ -3,8 +3,6 @@ from collections import deque
 
 import networkx as nx
 
-from calculation.model.utils import list_to_dotted_string
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -44,12 +42,10 @@ class ComponentGraph(nx.DiGraph):
         for i, cluster in enumerate(clusters):
 
             # Node id in `condensed` corresponds to the index of cluster
-            new_id = [i]
-            condensed.add_complex_node(new_id)
-
-            new_id_formatted = list_to_dotted_string(new_id)
-            storage.append(new_id_formatted)
-            condensed.nodes[new_id_formatted]['id'] = i
+            new_id = (i, )
+            condensed.add_node(new_id)
+            storage.append(new_id)
+            condensed.nodes[new_id]['id'] = i
 
         # TODO merge this loop into previous if possible
         for i, cluster in enumerate(clusters):
@@ -79,13 +75,11 @@ class ComponentGraph(nx.DiGraph):
 
     def add_complex_node(self, id_):
 
-        converted_id = list_to_dotted_string(id_)
-        self.add_node(converted_id)
-        self.nodes[converted_id]['id'] = -1
-        return converted_id
+        self.add_node(id_)
+        self.nodes[id_]['id'] = -1
 
     def add_edge_for_complex_nodes(self, id_1, id_2):
 
-        converted_1 = self.add_complex_node(id_1)
-        converted_2 = self.add_complex_node(id_2)
-        self.add_edge(converted_1, converted_2)
+        self.add_complex_node(id_1)
+        self.add_complex_node(id_2)
+        self.add_edge(id_1, id_2)
