@@ -12,6 +12,7 @@ plotly = "*"
 sympy = "*"
 networkx = "*"
 numba = "*"
+flameprof = "*"
 
 [requires]
 python_version = "3.8"

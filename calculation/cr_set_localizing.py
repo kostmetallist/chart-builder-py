@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from calculation.model.component_graph import ComponentGraph
 from calculation.model.zoomable_area import ZoomableArea
-from monitoring.decorators import capture_execution_time
+from monitoring.decorators import capture_execution_time, dump_profile
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -41,6 +41,7 @@ def _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth):
         raise ValueError
 
 
+@dump_profile
 @capture_execution_time
 def condense_connected_components(x_mapping, y_mapping,
                                   area_bounds=(0, 0, 1, 1), cell_density=100,

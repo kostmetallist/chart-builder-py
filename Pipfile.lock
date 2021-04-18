@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ca7bb2007ae1f8e70e42aa6f0c623bac1354880608fe239a5a12a170dacd7211"
+            "sha256": "a8d5836dd9e47f294315a26c80f41b263b4819667d6f9366dd0bd76c9830579d"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -22,6 +22,13 @@
                 "sha256:e3a62f0520172440ca0dcc823749319382e377f37f140a0b99ef45fecb84bfe7"
             ],
             "version": "==4.4.2"
+        },
+        "flameprof": {
+            "hashes": [
+                "sha256:dbc86d4190cbbba624f1e0a40f44d9db96138e27534d83c8ef42d420857875a3"
+            ],
+            "index": "pypi",
+            "version": "==0.4"
         },
         "llvmlite": {
             "hashes": [
