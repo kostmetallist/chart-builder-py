@@ -130,3 +130,6 @@ dmypy.json
 
 # File with recent run settings
 settings/.recent_session
+
+# cProfile statistics files
+monitoring/*.dmp

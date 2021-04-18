@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
-from calculation.monitoring import capture_execution_time
+from monitoring.decorators import capture_execution_time
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

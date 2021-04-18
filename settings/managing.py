@@ -19,11 +19,13 @@ SETTINGS_BY_MODES = {
     },
     'CR_SET_LOCALIZING': {
         '@ID': 2,
-        'x_mapping': '1 - 1.4 * x**2 + .3 * y',
-        'y_mapping': 'x',
+        'x_mapping': '2 - .9 * (x * cos(.4 - 6 / (1 + x**2 + y**2)) '
+                     '- y * sin(.4 - 6 / (1 + x**2 + y**2)))',
+        'y_mapping': '.9 * (x * sin(.4 - 6 / (1 + x**2 + y**2)) '
+                     '+ y * cos(.4 - 6 / (1 + x**2 + y**2)))',
         'sw_point': (-10.0, -10.0),
         'ne_point': (10.0, 10.0),
-        'cell_density': 1_000,
+        'cell_density': 100,
         'depth': 5,
     },
 }

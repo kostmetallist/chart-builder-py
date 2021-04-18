@@ -3,9 +3,9 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
-from calculation.monitoring import capture_execution_time
 from calculation.model.component_graph import ComponentGraph
 from calculation.model.zoomable_area import ZoomableArea
+from monitoring.decorators import capture_execution_time
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -58,7 +58,6 @@ def condense_connected_components(x_mapping, y_mapping,
 
     area.do_initial_fragmentation(cg_init)
     area.fill_symbolic_image(cg_init, x_mapping, y_mapping)
-    cg_init.run_tarjan()
     area.markup_entire_area(cg_init)
 
     components_order = []
@@ -69,7 +68,6 @@ def condense_connected_components(x_mapping, y_mapping,
 
         area.do_regular_fragmentation(cg)
         area.fill_symbolic_image(cg, x_mapping, y_mapping)
-        cg.run_tarjan()
         area.markup_entire_area(cg)
 
         if i == depth - 1:
@@ -78,7 +76,7 @@ def condense_connected_components(x_mapping, y_mapping,
             sorted_reversed = condensed_cg.sort_nodes()
 
             for node in sorted_reversed:
-                if condensed_cg.nodes[node]['id'] < cg.get_clusters_number():
+                if condensed_cg.nodes[node]['id'] < len(cg.nodes):
                     components_order.insert(0, node)
 
 

@@ -14,99 +14,34 @@ class ComponentGraph(nx.DiGraph):
     def __init__(self, *args):
 
         super().__init__(*args)
-        self.grey_nodes = deque()
-        self.blacklisted = []
-        self.concentrated_nodes = []
-
-        self._index = 0  # TODO rename
-        self._cluster_index = 0
-        self._scc_n = 0
-        self._visited = deque()
-        self._stack = set()  # TODO rename
+        self._grey_nodes = deque()
+        self._blacklisted = []
 
     def _perform_dfs(self, start_node):
 
-        self.grey_nodes.append(start_node)
+        self._grey_nodes.append(start_node)
         for neighbour in self.adj[start_node]:
-            if neighbour not in self.blacklisted:
+            if neighbour not in self._blacklisted:
                 self._perform_dfs(neighbour)
 
-        self.blacklisted.append(self.grey_nodes.pop())
+        self._blacklisted.append(self._grey_nodes.pop())
 
-    def _strong_connect(self, node):
+    def sort_nodes(self):
 
-        self.nodes[node]['index'] = self.nodes[node]['low_link'] = self._index
-        self._index += 1
-        self._visited.append(node)
-        self._stack.add(node)
+        for node in [edge[0] for edge in self.edges]:
+            if node not in self._blacklisted:
+                self._perform_dfs(node)
 
-        for neighbour in self.adj[node]:
-
-            if self.nodes[neighbour]['index'] == -1:
-                self._strong_connect(neighbour)
-                self.nodes[node]['low_link'] = min(
-                    self.nodes[node]['low_link'],
-                    self.nodes[neighbour]['low_link']
-                )
-
-            elif neighbour in self._stack:
-                self.nodes[node]['low_link'] = min(
-                    self.nodes[node]['low_link'],
-                    self.nodes[neighbour]['index']
-                )
-
-        if self.nodes[node]['low_link'] == self.nodes[node]['index']:
-
-            cycle = set()
-            while True:
-                p = self._visited.pop()
-                self._stack.remove(p)
-                cycle.add(p)
-
-                if p == node:
-                    break
-
-            # Second condition here marks auto-looping nodes as SCCs too
-            if len(cycle) > 1 or node in self.adj[node]:
-
-                for elem in cycle:
-                    self.nodes[elem]['id'] = self._cluster_index
-
-                self._cluster_index += 1
-                self.concentrated_nodes.append(cycle)
-
-    def run_tarjan(self):
-
-        for node in self.nodes:
-            if node is not None and self.nodes[node]['index'] == -1:
-                logging.debug(f'Calling _strong_connect for {node}')
-                self._strong_connect(node)
-
-        num_transit_nodes = 0
-        self._scc_n = self._cluster_index
-
-        for node in self.nodes:
-            # Hasn't been provided with some cluster id
-            if self.nodes[node]['id'] == -1:
-
-                self.nodes[node]['id'] = self._cluster_index
-                self.concentrated_nodes.append({node})
-                self._cluster_index += 1
-                num_transit_nodes += 1
-
-        logging.debug(f'Collected {num_transit_nodes} transit_nodes')
+        return self._blacklisted
 
     def generate_condensed_graph(self):
-        """
-        Generate condensed SCC graph.
 
-        Creates a graph where each node corresponds to a cluster in
-        `self.concentrated_nodes`.
-        """
+        clusters = [x for x in nx.strongly_connected_components(self)
+                    if len(x) > 1]
         storage = []
         condensed = ComponentGraph()
 
-        for i, cluster in enumerate(self.concentrated_nodes):
+        for i, cluster in enumerate(clusters):
 
             # Node id in `condensed` corresponds to the index of cluster
             new_id = [i]
@@ -117,7 +52,7 @@ class ComponentGraph(nx.DiGraph):
             condensed.nodes[new_id_formatted]['id'] = i
 
         # TODO merge this loop into previous if possible
-        for i, cluster in enumerate(self.concentrated_nodes):
+        for i, cluster in enumerate(clusters):
 
             cluster_links = set()
             new_links = set()
@@ -139,18 +74,13 @@ class ComponentGraph(nx.DiGraph):
 
         return condensed
 
-    def get_clusters(self):
-        return self.concentrated_nodes
-
-    def get_clusters_number(self):
-        return self._scc_n
+    def get_strongly_connected_components(self):
+        return nx.strongly_connected_components(self)
 
     def add_complex_node(self, id_):
 
         converted_id = list_to_dotted_string(id_)
         self.add_node(converted_id)
-        self.nodes[converted_id]['index'] = -1
-        self.nodes[converted_id]['low_link'] = -1
         self.nodes[converted_id]['id'] = -1
         return converted_id
 
@@ -159,11 +89,3 @@ class ComponentGraph(nx.DiGraph):
         converted_1 = self.add_complex_node(id_1)
         converted_2 = self.add_complex_node(id_2)
         self.add_edge(converted_1, converted_2)
-
-    def sort_nodes(self):
-
-        for node in [edge[0] for edge in self.edges]:
-            if node not in self.blacklisted:
-                self._perform_dfs(node)
-
-        return self.blacklisted

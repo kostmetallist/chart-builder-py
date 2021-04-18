@@ -221,12 +221,21 @@ class ZoomableArea:
 
     def markup_entire_area(self, component_graph):
 
-        logging.debug(f'Number of SCC: {component_graph.get_clusters_number()}')
+        clusters_num = 0
+        ordered_components = list(sorted(
+            component_graph.get_strongly_connected_components(),
+            key=len,
+            reverse=True))
 
-        for i, cluster in enumerate(component_graph.get_clusters()):
-            for node in cluster:
+        for i, component in enumerate(ordered_components):
+            for node in component:
                 id_ = dotted_string_to_list(node)
-                if i > component_graph.get_clusters_number() - 1:
-                    self.get_cell_by_id(id_).status = CellStatus.DISCARDED
-                else:
+
+                if len(component) > 1:
                     self.get_cell_by_id(id_).cluster = i
+                    clusters_num += 1
+                else:
+                    self.get_cell_by_id(id_).status = CellStatus.DISCARDED
+
+        logging.debug(f'{clusters_num}/{len(ordered_components)} '
+                      'components are clusters')
