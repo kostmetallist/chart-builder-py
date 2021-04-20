@@ -1,10 +1,51 @@
 import logging
 from enum import Enum, auto
-from math import floor
 from random import random
+
+import numpy as np
+from numba import jit
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+
+@jit(nopython=True)
+def check_point_in_area(x, y,
+                        area_sw_x, area_sw_y, area_ne_x, area_ne_y):
+    # TODO experiment with performance of bidirected comparisons
+    return x > area_sw_x \
+        and x < area_ne_x \
+        and y > area_sw_y \
+        and y < area_ne_y
+
+
+@jit(nopython=True, fastmath=True)
+def get_cell_number_for_point(x, y,
+                              area_sw_x, area_sw_y, area_ne_x, area_ne_y,
+                              cells_by_x, cells_by_y):
+    """
+    Retrieve area's cell number for given point (x, y).
+
+    Counting up to down and left to right, i.e.
+
+    ________________
+    |    |    |    |
+    |  0 |  1 |  2 |
+    |____|____|____|
+    |    |    |    |
+    |  3 |  4 |  5 |
+    |____|____|____|
+    """
+    if not check_point_in_area(x, y, area_sw_x, area_sw_y, area_ne_x, area_ne_y):
+        return -1
+
+    cell_width = (area_ne_x - area_sw_x) / cells_by_x
+    cell_height = (area_ne_y - area_sw_y) / cells_by_y
+
+    i = np.int32(np.floor((x - area_sw_x) / cell_width))
+    j = np.int32(np.floor((y - area_sw_y) / cell_height))
+
+    return (cells_by_y - 1 - j) * cells_by_x + i
 
 
 class CellStatus(Enum):
@@ -24,8 +65,8 @@ class ZoomableArea:
         self.cells_by_y = cells_by_y
         self.id_ = id_
 
-        self.cell_width = (self.ne_x-self.sw_x) / self.cells_by_x
-        self.cell_height = (self.ne_y-self.sw_y) / self.cells_by_y
+        self.cell_width = (self.ne_x - self.sw_x) / self.cells_by_x
+        self.cell_height = (self.ne_y - self.sw_y) / self.cells_by_y
         self.status = CellStatus.ACTIVE
         self.cluster = 0
 
@@ -34,15 +75,6 @@ class ZoomableArea:
         # if we really have a fragmentation
         if self.cells_by_x != 1 or self.cells_by_y != 1:
             self._initialize_children()
-
-    # TODO numba @jit
-    def _check_point_bounds(self, x, y): 
-        return all([
-            x > self.sw_x,
-            x < self.ne_x,
-            y > self.sw_y,
-            y < self.ne_y,
-        ])
 
     def _initialize_children(self):
 
@@ -60,7 +92,6 @@ class ZoomableArea:
                                      self.id_ + (j*self.cells_by_x + i, ))
                 self.children.append(child)
 
-    # TODO numba @jit
     def _set_cells_number(self, cells_by_x, cells_by_y):
 
         if self.cells_by_x == 1 and self.cells_by_y == 1:
@@ -73,36 +104,11 @@ class ZoomableArea:
             self.cells_by_x = cells_by_x
             self.cells_by_y = cells_by_y
             self.cell_width = (self.ne_x - self.sw_x) / self.cells_by_x
-            self.cell_height  = (self.ne_y - self.sw_y) / self.cells_by_y
+            self.cell_height = (self.ne_y - self.sw_y) / self.cells_by_y
 
             self._initialize_children()
-    
-    # TODO numba @jit
-    def _get_cell_number(self, x, y):
-        """
-        Get cell number for given point (x, y).
 
-        Counting up to down and left to right, i.e.
-
-        ________________
-        |    |    |    |
-        |  0 |  1 |  2 |
-        |____|____|____|
-        |    |    |    |
-        |  3 |  4 |  5 |
-        |____|____|____|
-        """
-
-        if not self._check_point_bounds(x, y):
-            logging.warning(f'Given point ({x}, {y}) is out of bounds')
-            return
-
-        i = int(floor((x - self.sw_x) / self.cell_width))
-        j = int(floor((y - self.sw_y) / self.cell_height))
-
-        return (self.cells_by_y - 1 - j) * self.cells_by_x + i
-
-    def _get_random_points(self, amount, general_list, clusters_list=None):
+    def get_active_area_points(self, cell_density, general_list, clusters_list=None):
 
         if not self.children and self.status is CellStatus.ACTIVE:
 
@@ -110,7 +116,7 @@ class ZoomableArea:
             area_width = self.ne_x - self.sw_x
             area_height = self.ne_y - self.sw_y
 
-            for i in range(amount):
+            for i in range(cell_density):
                 area_points.append((
                     self.sw_x + random() * area_width,
                     self.sw_y + random() * area_height
@@ -122,7 +128,8 @@ class ZoomableArea:
         
         else:
             for child in self.children:
-                child._get_random_points(amount, general_list, clusters_list)
+                child.get_active_area_points(
+                    cell_density, general_list, clusters_list)
 
     def get_cell_by_id(self, id_):
 
@@ -130,7 +137,7 @@ class ZoomableArea:
 
         for i in range(len(id_)):
             if not parent.children:
-                if (i < len(id_) - 1):
+                if i < len(id_) - 1:
                     logging.warning('get_cell_by_id reached end of '
                                     'fragmentation but `id_` is not over')
                 return parent
@@ -139,8 +146,6 @@ class ZoomableArea:
 
         return parent
 
-    
-    # TODO numba @jit
     def get_cell_by_point(self, x, y):
         """
         Note: this method returns appropriate ZoomableArea
@@ -150,12 +155,22 @@ class ZoomableArea:
         if not self.children:
             return self
 
-        child = self.children[self._get_cell_number(x, y)]
+        cell_number = get_cell_number_for_point(
+            x, y,
+            self.sw_x, self.sw_y, self.ne_x, self.ne_y,
+            self.cells_by_x, self.cells_by_y
+        )
+
+        if cell_number == -1:
+            logging.warning(f'Given point ({x}, {y}) is out of bounds')
+            return
+
+        child = self.children[cell_number]
         return child.get_cell_by_point(x, y)
 
     def do_initial_fragmentation(self, component_graph):
 
-        # component_graph must be root CellularArea
+        # component_graph must be root ZoomableArea
         for child in self.children:
             component_graph.add_complex_node(child.id_)
 
@@ -174,27 +189,14 @@ class ZoomableArea:
             for child in self.children:
                 child.do_regular_fragmentation(component_graph)
 
-    def get_active_area(self, points_by_cell):
-
-        general_list = []
-        self._get_random_points(points_by_cell, general_list)
-        return general_list
-
-    def get_active_clustered_area(self, points_by_cell):
-
-        general_list, clusters_list = [], []
-        self._get_random_points(points_by_cell, general_list, clusters_list)
-        return general_list, clusters_list
-
     def fill_symbolic_image(self, component_graph, x_mapping, y_mapping):
 
-        nodes_collection = component_graph.nodes
-        for node in nodes_collection:
+        for node in component_graph.nodes:
 
             zoomable_area = self.get_cell_by_id(node)
             cell_points = []
 
-            zoomable_area._get_random_points(100, cell_points)
+            zoomable_area.get_active_area_points(100, cell_points, [])
 
             for point in cell_points:
 
@@ -202,7 +204,9 @@ class ZoomableArea:
                 new_y = y_mapping(point[0], point[1])
 
                 # In this case we do not registrating such link in graph
-                if not self._check_point_bounds(new_x, new_y):
+                if not check_point_in_area(
+                        new_x, new_y,
+                        self.sw_x, self.sw_y, self.ne_x, self.ne_y):
                     break
 
                 # A cell which contains mapped point

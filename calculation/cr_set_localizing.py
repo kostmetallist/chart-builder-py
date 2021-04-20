@@ -83,10 +83,11 @@ def condense_connected_components(x_mapping, y_mapping,
 
     print('Order of SCC:', *components_order, sep='\n')
 
-    pre_result = area.get_active_clustered_area(cell_density)[0]
-    xs = np.empty(len(pre_result), dtype=np.float32)
-    ys = np.empty(len(pre_result), dtype=np.float32)
-    for i, elem in enumerate(pre_result):
+    points = []
+    area.get_active_area_points(cell_density, points)
+    xs = np.empty(len(points), dtype=np.float32)
+    ys = np.empty(len(points), dtype=np.float32)
+    for i, elem in enumerate(points):
         xs[i] = elem[0]
         ys[i] = elem[1]
 
