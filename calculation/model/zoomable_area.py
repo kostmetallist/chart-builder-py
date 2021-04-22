@@ -12,11 +12,9 @@ logger.setLevel(logging.INFO)
 @jit(nopython=True)
 def check_point_in_area(x, y,
                         area_sw_x, area_sw_y, area_ne_x, area_ne_y):
-    # TODO experiment with performance of bidirected comparisons
-    return x > area_sw_x \
-        and x < area_ne_x \
-        and y > area_sw_y \
-        and y < area_ne_y
+
+    return area_sw_x < x < area_ne_x \
+        and area_sw_y < y < area_ne_y
 
 
 @jit(nopython=True, fastmath=True)
@@ -223,10 +221,7 @@ class ZoomableArea:
     def markup_entire_area(self, component_graph):
 
         clusters_num = 0
-        ordered_components = list(sorted(
-            component_graph.get_strongly_connected_components(),
-            key=len,
-            reverse=True))
+        ordered_components = component_graph.get_strongly_connected_components()
 
         for i, component in enumerate(ordered_components):
             for node in component:
@@ -237,5 +232,5 @@ class ZoomableArea:
                 else:
                     self.get_cell_by_id(node).status = CellStatus.DISCARDED
 
-        logging.debug(f'{clusters_num}/{len(ordered_components)} '
+        logging.debug(f'{clusters_num}/{len(list(ordered_components))} '
                       'components are clusters')

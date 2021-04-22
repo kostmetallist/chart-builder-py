@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from tqdm import tqdm
+from tqdm import trange
 
 from calculation.model.component_graph import ComponentGraph
 from calculation.model.zoomable_area import ZoomableArea
@@ -63,7 +63,7 @@ def condense_connected_components(x_mapping, y_mapping,
 
     components_order = []
 
-    for i in tqdm(range(depth)):
+    for i in trange(depth):
 
         cg = ComponentGraph()
 
@@ -77,7 +77,9 @@ def condense_connected_components(x_mapping, y_mapping,
             sorted_reversed = condensed_cg.sort_nodes()
 
             for node in sorted_reversed:
-                if condensed_cg.nodes[node]['id'] < len(cg.nodes):
+                if condensed_cg.nodes[node]['group'] \
+                        < len(list(cg.dense_components)):
+
                     components_order.insert(0, node)
 
 

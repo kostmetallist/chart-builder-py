@@ -15,6 +15,10 @@ class ComponentGraph(nx.DiGraph):
         self._grey_nodes = deque()
         self._blacklisted = []
 
+    @staticmethod
+    def _gen_simple_node_id(i):
+        return (i, )
+
     def _perform_dfs(self, start_node):
 
         self._grey_nodes.append(start_node)
@@ -34,49 +38,55 @@ class ComponentGraph(nx.DiGraph):
 
     def generate_condensed_graph(self):
 
-        clusters = [x for x in nx.strongly_connected_components(self)
-                    if len(x) > 1]
-        storage = []
         condensed = ComponentGraph()
+        components = self.get_strongly_connected_components()
 
-        for i, cluster in enumerate(clusters):
+        for i, component in enumerate(components):
 
-            # Node id in `condensed` corresponds to the index of cluster
-            new_id = (i, )
-            condensed.add_node(new_id)
-            storage.append(new_id)
-            condensed.nodes[new_id]['id'] = i
+            # Assigning cluster number to existing nodes
+            for node in component:
+                self.nodes[node]['group'] = i
 
-        # TODO merge this loop into previous if possible
-        for i, cluster in enumerate(clusters):
+            # Node id in `condensed` corresponds to the index of the component
+            condensed.add_complex_node(self._gen_simple_node_id(i), group=i)
 
-            cluster_links = set()
-            new_links = set()
-            node_from = storage[i]
+        for i, component in enumerate(components):
 
-            for node in cluster:
-                cluster_links = cluster_links | set(self.adj[node])
+            condensed_edges = set()
+            node_from = self._gen_simple_node_id(i)
 
-            # We can be sure that node['id'] equals to 
-            # `concentrated_nodes` index of that cluster id
-            for node in cluster_links:
+            for outgoing in {neighbour
+                             for node in component
+                             for neighbour in self.adj[node]}:
 
-                node_to = storage[self.nodes[node]['id']]
+                node_to = self._gen_simple_node_id(self.nodes[outgoing]['group'])
+
                 # We mustn't register auto-loops for correct `sort_nodes` work
                 if node_to != node_from:
-                    new_links.add(node_to)
+                    condensed_edges.add(node_to)
 
-            condensed.add_edges_from([(node_from, x) for x in new_links])
+            condensed.add_edges_from([(node_from, x) for x in condensed_edges])
 
         return condensed
 
     def get_strongly_connected_components(self):
-        return nx.strongly_connected_components(self)
 
-    def add_complex_node(self, id_):
+        # Transit components are placed in the trailing part
+        return sorted(nx.strongly_connected_components(self),
+                      key=len,
+                      reverse=True)
+
+    @property
+    def dense_components(self):
+
+        return filter(lambda x: len(x) > 1,
+            self.get_strongly_connected_components())
+    
+
+    def add_complex_node(self, id_, group=-1):
 
         self.add_node(id_)
-        self.nodes[id_]['id'] = -1
+        self.nodes[id_]['group'] = group
 
     def add_edge_for_complex_nodes(self, id_1, id_2):
 
