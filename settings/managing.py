@@ -27,6 +27,7 @@ SETTINGS_BY_MODES = {
         'ne_point': (10.0, 10.0),
         'cell_density': 100,
         'depth': 5,
+        'topsort_enabled': True,
     },
 }
 
@@ -67,7 +68,6 @@ class SettingsManager(abc.ABC):
 
         return lambdify([x, y], expr, 'numpy')
 
-    # FIXME doesn't allow to enter anything
     @staticmethod
     def _parse_comma_delimited_floats(elements_number: int):
         def _parse_fixed_length_comma_delimited_floats(expression: str):
@@ -90,6 +90,12 @@ class SettingsManager(abc.ABC):
             return result
         except ValueError:
             return None
+
+    @staticmethod
+    def _parse_bool(expression: str):
+        return True if expression.capitalize() == 'True' \
+            else False if expression.capitalize() == 'False' \
+            else None
 
     @staticmethod
     def _input_with_default(default, prompt_format_string, parser_callback,
@@ -216,5 +222,11 @@ class CrSetLocalizingSettingsManager(SettingsManager):
             settings['depth'], 'Fragmentation depth (localizing steps) [{}]: ',
             self._parse_integer)
         settings['depth'] = depth
+
+        _, topsort_enabled = self._input_with_default(
+            settings['topsort_enabled'],
+            'Enable topological sorting for the last layer [{}]: ',
+            self._parse_bool)
+        settings['topsort_enabled'] = topsort_enabled
 
         return export_overrides

@@ -10,8 +10,11 @@ from monitoring.decorators import capture_execution_time, dump_profile
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+INITIAL_FRAGMENTATION = (40, 40)
 
-def _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth):
+
+def _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth,
+                   topsort_enabled):
 
     if not callable(x_mapping):
         logging.error(f'`x_mapping` ({x_mapping}) is not a callable object; '
@@ -40,22 +43,27 @@ def _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth):
                       'pass positive integer instead')
         raise ValueError
 
+    if not isinstance(topsort_enabled, bool):
+        logging.error(f'Invalid `topsort_enabled` given: {topsort_enabled}; '
+                      'pass boolean value instead')
+        raise ValueError
+
 
 @dump_profile
 @capture_execution_time
 def condense_connected_components(x_mapping, y_mapping,
                                   area_bounds=(0, 0, 1, 1), cell_density=100,
-                                  depth=5):
+                                  depth=5, topsort_enabled=False):
 
     try:
-        _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth)
+        _validate_args(x_mapping, y_mapping, area_bounds, cell_density, depth,
+                      topsort_enabled)
     except ValueError:
         logging.error('Aborting connected components localization...')
         return None
 
     cg_init = ComponentGraph()
-    # TODO move cells_by_x, cells_by_y to settings
-    area = ZoomableArea(area_bounds, 40, 40, tuple())
+    area = ZoomableArea(area_bounds, *INITIAL_FRAGMENTATION, tuple())
 
     area.do_initial_fragmentation(cg_init)
     area.fill_symbolic_image(cg_init, x_mapping, y_mapping)
@@ -71,19 +79,20 @@ def condense_connected_components(x_mapping, y_mapping,
         area.fill_symbolic_image(cg, x_mapping, y_mapping)
         area.markup_entire_area(cg)
 
-        if i == depth - 1:
+        if topsort_enabled and i == depth - 1:
 
+            logging.info('Launching topological sorting on the last layer...')
             condensed_cg = cg.generate_condensed_graph()
             sorted_reversed = condensed_cg.sort_nodes()
+            dense_components = cg.dense_components
 
             for node in sorted_reversed:
-                if condensed_cg.nodes[node]['group'] \
-                        < len(list(cg.dense_components)):
-
+                if condensed_cg.nodes[node]['group'] < len(dense_components):
                     components_order.insert(0, node)
 
 
-    print('Order of SCC:', *components_order, sep='\n')
+    if topsort_enabled:
+        print('Order of SCC:', *[x[0] for x in components_order], sep='\n')
 
     points = []
     area.get_active_area_points(cell_density, points)

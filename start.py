@@ -58,7 +58,8 @@ if __name__ == '__main__':
             settings['y_mapping'],
             (*settings['sw_point'], *settings['ne_point']),
             settings['cell_density'],
-            settings['depth']
+            settings['depth'],
+            settings['topsort_enabled']
         )
 
         compose_scatter_plot(xs, ys).show()

@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from tqdm import tqdm
+from tqdm import trange
 
 from monitoring.decorators import capture_execution_time, dump_profile
 
@@ -54,7 +54,7 @@ def populate_2d_points(x_mapping, y_mapping, start_point=(.0, .0),
     # as possible per cache line
     xs_array[0], ys_array[0] = x, y
 
-    for i in tqdm(range(iterations)):
+    for i in trange(iterations):
         x, y = x_mapping(x, y), y_mapping(x, y)
         xs_array[i + 1], ys_array[i + 1] = x, y
 
